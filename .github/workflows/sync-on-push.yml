@@ -1,0 +1,36 @@
+name: Sync Sermons to Pinecone (xlsx file source)
+
+# Use this workflow if you went with Option B (a real .xlsx file, kept in
+# this repo, no Google Sheet involved). It fires automatically whenever
+# that file changes on the main branch, and uploads it straight to the
+# backend's sync endpoint. Also triggerable manually.
+#
+# Expects the file at: data/sermons.xlsx  — adjust the path below and in
+# the "paths" filter if you keep it somewhere else.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/data/sermons.xlsx"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload sheet to backend and trigger sync
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.RENDER_BACKEND_URL }}/admin/sync" \
+            -H "X-Admin-Key: ${{ secrets.ADMIN_SECRET }}" \
+            -F "file=@backend/data/sermons.xlsx")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Response: $body"
+          if [ "$http_code" -ne 200 ]; then
+            echo "Sync failed with status $http_code"
+            exit 1
+          fi

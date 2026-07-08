@@ -1,0 +1,9 @@
+github-actions/
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+backend/data/sermons_cache.json
+backend/venv/
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local

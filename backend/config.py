@@ -33,8 +33,9 @@ class Settings:
     # to /admin/sync as a file upload — both are supported.
     SHEET_CSV_URL: str = os.getenv("SHEET_CSV_URL", "")
 
-    # Embedding model — 384-dim, small, free, runs locally on CPU
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+    # Embedding model — 384-dim, small, free, runs locally, no PyTorch
+    # (fastembed uses ONNX runtime — see services/embeddings.py for why)
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
     EMBEDDING_DIM: int = 384
 
     # CORS

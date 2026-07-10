@@ -7,4 +7,3 @@ backend/venv/
 frontend/node_modules/
 frontend/.next/
 frontend/.env.local
-backend/data/sermons_test_data.xlsx

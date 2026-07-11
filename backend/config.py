@@ -5,7 +5,13 @@ load_dotenv()
 
 
 class Settings:
-    # Pinecone
+    # Postgres (Supabase) — this is now the live source of truth for
+    # browsing. Use the "Transaction pooler" connection string from
+    # Supabase's Connect dialog for better reliability against a
+    # non-persistent backend like Render's free tier.
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+    # Pinecone (search index only — derived from Postgres, not authoritative)
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
     PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "vivify-vault-sermons")
     PINECONE_CLOUD: str = os.getenv("PINECONE_CLOUD", "aws")
@@ -14,27 +20,12 @@ class Settings:
     # Groq
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-
-    # Toggle: default state read from env var at startup.
-    # Can be flipped live via POST /admin/toggle-llm (see main.py) but that
-    # in-memory override resets to this default if the server restarts —
-    # Render's free tier spins down after ~15 min idle, so treat the env
-    # var as the "durable" setting and the live toggle as a same-session
-    # convenience.
     GROQ_ENABLED_DEFAULT: bool = os.getenv("GROQ_ENABLED", "true").lower() == "true"
 
     # Admin
     ADMIN_SECRET: str = os.getenv("ADMIN_SECRET", "change-me")
 
-    # Data source for the "excel sheet"
-    # Option A (recommended): a Google Sheet published as CSV, backend
-    # fetches it fresh on every /admin/sync call.
-    # Option B: leave this blank and instead POST an .xlsx file directly
-    # to /admin/sync as a file upload — both are supported.
-    SHEET_CSV_URL: str = os.getenv("SHEET_CSV_URL", "")
-
-    # Embedding model — 384-dim, small, free, runs locally, no PyTorch
-    # (fastembed uses ONNX runtime — see services/embeddings.py for why)
+    # Embedding model — no PyTorch (see services/embeddings.py)
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
     EMBEDDING_DIM: int = 384
 
@@ -42,6 +33,11 @@ class Settings:
     ALLOWED_ORIGINS: list[str] = os.getenv(
         "ALLOWED_ORIGINS", "http://localhost:3000"
     ).split(",")
+
+    # Only used by scripts/fill_descriptions_from_spotify.py
+    SPOTIFY_CLIENT_ID: str = os.getenv("SPOTIFY_CLIENT_ID", "")
+    SPOTIFY_CLIENT_SECRET: str = os.getenv("SPOTIFY_CLIENT_SECRET", "")
+    SPOTIFY_MARKET: str = os.getenv("SPOTIFY_MARKET", "NG")
 
 
 settings = Settings()

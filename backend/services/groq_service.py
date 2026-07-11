@@ -2,11 +2,6 @@ from groq import Groq
 from config import settings
 
 _client: Groq | None = None
-
-# In-memory runtime override for the toggle. Starts at the env var default
-# and can be flipped live via POST /admin/toggle-llm without a redeploy.
-# NOTE: resets to GROQ_ENABLED_DEFAULT if the process restarts (e.g. Render
-# free-tier cold start after idle spin-down).
 _runtime_enabled: bool = settings.GROQ_ENABLED_DEFAULT
 
 
@@ -27,17 +22,12 @@ def _get_client() -> Groq:
 
 
 def generate_recommendation(query: str, sermons: list[dict]) -> str:
-    """sermons: list of {title, category, speaker, link, description}.
-    Falls back to a template response if the toggle is off, the API key
-    is missing, or the Groq call fails for any reason (rate limit, out of
-    credits, network) — the chat should never hard-fail just because the
-    LLM layer is unavailable.
-    """
+    """sermons: list of {title, categories, description, link}."""
     if not is_enabled() or not settings.GROQ_API_KEY:
         return _template_response(sermons)
 
     context = "\n\n".join(
-        f"Title: {s['title']}\nCategory: {s['category']}\n"
+        f"Title: {s['title']}\nCategories: {', '.join(s['categories'])}\n"
         f"Description: {s['description']}"
         for s in sermons
     )
@@ -66,8 +56,6 @@ def generate_recommendation(query: str, sermons: list[dict]) -> str:
         )
         return completion.choices[0].message.content.strip()
     except Exception:
-        # Out of credits, rate-limited, network blip, etc. — degrade
-        # gracefully rather than 500-ing the whole chat response.
         return _template_response(sermons)
 
 
@@ -76,5 +64,5 @@ def _template_response(sermons: list[dict]) -> str:
         return "I couldn't find a sermon that matches — try rephrasing your question."
     lines = ["Here's what I found that might help:"]
     for s in sermons:
-        lines.append(f"- \"{s['title']}\" ({s['category']}) — {s['link']}")
+        lines.append(f"- \"{s['title']}\" ({', '.join(s['categories'])}) — {s['link']}")
     return "\n".join(lines)

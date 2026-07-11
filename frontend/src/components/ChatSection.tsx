@@ -74,15 +74,9 @@ export default function ChatSection() {
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {response.results.map((r) => (
-                <a
-                  key={r.id}
-                  href={r.sermon.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-xl bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-                >
+                <div key={r.id} className="rounded-xl bg-white p-4 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-vault-magenta">
-                    {r.sermon.category}
+                    {r.sermon.categories.join(" • ")}
                   </p>
                   <p className="mt-1 font-bold text-vault-charcoal">
                     {r.sermon.title}
@@ -90,7 +84,29 @@ export default function ChatSection() {
                   <p className="mt-1 text-sm text-gray-600 line-clamp-2">
                     {r.sermon.description}
                   </p>
-                </a>
+                  <div className="mt-2 flex gap-3">
+                    {r.sermon.spotify_link && (
+                      <a
+                        href={r.sermon.spotify_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-vault-magenta hover:underline"
+                      >
+                        Spotify
+                      </a>
+                    )}
+                    {r.sermon.apple_music_link && (
+                      <a
+                        href={r.sermon.apple_music_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-vault-magenta hover:underline"
+                      >
+                        Apple Music
+                      </a>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

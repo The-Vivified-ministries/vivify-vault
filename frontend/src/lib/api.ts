@@ -1,11 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
 export type Sermon = {
+  id: number;
   title: string;
-  category: string;
-  speaker?: string | null;
-  link: string;
+  year: number | null;
+  categories: string[];
+  subcategories: string[];
   description: string;
+  spotify_link: string | null;
+  apple_music_link: string | null;
 };
 
 export type SearchResult = {
@@ -20,31 +23,8 @@ export type ChatResponse = {
   results: SearchResult[];
 };
 
-export async function getCategories(): Promise<string[]> {
-  const res = await fetch(`${API_URL}/categories`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load categories");
-  return res.json();
-}
-
-export async function getSermons(category?: string): Promise<Sermon[]> {
-  const url = category
-    ? `${API_URL}/sermons?category=${encodeURIComponent(category)}`
-    : `${API_URL}/sermons`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to load sermons");
-  return res.json();
-}
-
-// --- Server-side, cached versions used by the homepage server component ---
-// These are what decouple plain catalogue browsing from live backend
-// availability: Next.js serves the last successfully cached response
-// instantly and only re-fetches in the background every `revalidate`
-// seconds (ISR). A cold or briefly-down backend never blocks a visitor
-// who's just browsing — they see the last-known-good catalogue.
-//
-// Chat intentionally does NOT use this pattern — a live round trip is
-// expected there, since the answer depends on the specific question.
-
+// Server-side cached — used for the top-level category list on first
+// paint, so it renders fast regardless of backend warmth.
 export async function getCategoriesCached(): Promise<string[]> {
   try {
     const res = await fetch(`${API_URL}/categories`, {
@@ -57,16 +37,39 @@ export async function getCategoriesCached(): Promise<string[]> {
   }
 }
 
-export async function getSermonsCached(): Promise<Sermon[]> {
-  try {
-    const res = await fetch(`${API_URL}/sermons`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
-  }
+// Everything below is live/client-side — these only run once someone
+// has actually drilled into a category, which is an interactive action
+// where a brief load is expected (same reasoning as chat).
+
+export async function getSubcategories(category: string): Promise<string[]> {
+  const res = await fetch(
+    `${API_URL}/categories/${encodeURIComponent(category)}/subcategories`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Failed to load subcategories");
+  return res.json();
+}
+
+export async function getYears(): Promise<number[]> {
+  const res = await fetch(`${API_URL}/years`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load years");
+  return res.json();
+}
+
+export async function getSermons(params: {
+  category: string;
+  subcategory: string;
+  year?: number;
+}): Promise<Sermon[]> {
+  const q = new URLSearchParams();
+  q.set("category", params.category);
+  q.set("subcategory", params.subcategory);
+  if (params.year) q.set("year", String(params.year));
+  const res = await fetch(`${API_URL}/sermons?${q.toString()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to load sermons");
+  return res.json();
 }
 
 export async function askChat(query: string): Promise<ChatResponse> {

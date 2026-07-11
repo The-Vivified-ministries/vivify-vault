@@ -26,24 +26,7 @@ def get_index():
     return pc.Index(settings.PINECONE_INDEX_NAME)
 
 
-def fetch_existing_hashes(ids: list[str]) -> dict[str, str]:
-    """Returns {id: content_hash} for whichever of the given ids already
-    exist in the index. Used to skip re-embedding unchanged rows."""
-    if not ids:
-        return {}
-    index = get_index()
-    result = {}
-    # Pinecone fetch has a batch limit; chunk defensively.
-    for i in range(0, len(ids), 100):
-        batch = ids[i : i + 100]
-        res = index.fetch(ids=batch)
-        for vec_id, vec in res.vectors.items():
-            result[vec_id] = vec.metadata.get("content_hash", "")
-    return result
-
-
 def upsert_sermons(items: list[dict]) -> None:
-    """items: [{id, values, metadata}, ...]"""
     if not items:
         return
     index = get_index()

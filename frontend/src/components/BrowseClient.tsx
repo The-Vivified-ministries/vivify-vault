@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSubcategories, getSermons, getYears, Sermon } from "@/lib/api";
+import {
+  getCategories,
+  getSubcategories,
+  getSermons,
+  getYears,
+  Sermon,
+} from "@/lib/api";
 import SermonCard from "@/components/SermonCard";
 
 export default function BrowseClient({ categories }: { categories: string[] }) {
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(categories);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [subcategories, setSubcategories] = useState<string[]>([]);
@@ -12,6 +19,39 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  useEffect(() => {
+    setCategoryOptions(categories);
+  }, [categories]);
+
+  useEffect(() => {
+    if (categories.length > 0) return;
+
+    let cancelled = false;
+
+    const refreshCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const next = await getCategories();
+        if (!cancelled) setCategoryOptions(next);
+      } catch {
+        if (!cancelled) setCategoryOptions([]);
+      } finally {
+        if (!cancelled) setLoadingCategories(false);
+      }
+    };
+
+    void refreshCategories();
+    const timer = window.setInterval(() => {
+      void refreshCategories();
+    }, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [categories.length]);
 
   useEffect(() => {
     getYears().then(setYears).catch(() => {});
@@ -111,10 +151,28 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
       {/* Level 1: Categories */}
       {!selectedCategory && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.length === 0 ? (
-            <p className="text-gray-500">Categories are temporarily unavailable — please check back shortly.</p>
+          {loadingCategories ? (
+            <p className="text-gray-500">Loading categories…</p>
+          ) : categoryOptions.length === 0 ? (
+            <div className="col-span-full space-y-3">
+              <p className="text-gray-500">
+                Categories are temporarily unavailable — please check back shortly.
+              </p>
+              <button
+                onClick={() => {
+                  setLoadingCategories(true);
+                  getCategories()
+                    .then(setCategoryOptions)
+                    .catch(() => setCategoryOptions([]))
+                    .finally(() => setLoadingCategories(false));
+                }}
+                className="rounded-full bg-vault-magenta px-4 py-2 text-sm font-semibold text-white hover:bg-vault-magentaDark"
+              >
+                Retry loading
+              </button>
+            </div>
           ) : (
-            categories.map((c) => (
+            categoryOptions.map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedCategory(c)}

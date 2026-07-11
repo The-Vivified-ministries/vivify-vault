@@ -37,6 +37,12 @@ export async function getCategoriesCached(): Promise<string[]> {
   }
 }
 
+export async function getCategories(): Promise<string[]> {
+  const res = await fetch(`${API_URL}/categories`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load categories");
+  return res.json();
+}
+
 // Everything below is live/client-side — these only run once someone
 // has actually drilled into a category, which is an interactive action
 // where a brief load is expected (same reasoning as chat).

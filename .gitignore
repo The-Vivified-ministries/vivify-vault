@@ -8,3 +8,4 @@ frontend/node_modules/
 frontend/.next/
 frontend/.env.local
 backend/data
+.github/workflows/sync-scheduled.yml

@@ -10,9 +10,10 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
       <h3 className="mt-1 text-lg font-bold text-vault-charcoal">
         {sermon.title}
       </h3>
-      <p className="mt-2 text-sm text-gray-700 line-clamp-3">
-        {sermon.description}
-      </p>
+      <div
+        className="mt-2 text-sm text-gray-700 leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: sermon.description }}
+      />
       <div className="mt-3 flex gap-4">
         {sermon.spotify_link && (
           <a

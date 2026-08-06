@@ -81,9 +81,10 @@ export default function ChatSection() {
                   <p className="mt-1 font-bold text-vault-charcoal">
                     {r.sermon.title}
                   </p>
-                  <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-                    {r.sermon.description}
-                  </p>
+                  <div
+                    className="mt-1 text-sm text-gray-600 line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: r.sermon.description }}
+                  />
                   <div className="mt-2 flex gap-3">
                     {r.sermon.spotify_link && (
                       <a

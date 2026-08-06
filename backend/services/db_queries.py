@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from db import engine
 from models import Sermon
 
@@ -8,6 +8,25 @@ def get_all_categories() -> list[str]:
     with Session(engine) as session:
         rows = session.exec(select(func.unnest(Sermon.categories)).distinct()).all()
         return sorted(set(rows))
+
+
+def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
+    query_text = query.strip()
+    if not query_text or top_k <= 0:
+        return []
+
+    with Session(engine) as session:
+        stmt = (
+            select(Sermon)
+            .where(
+                or_(
+                    Sermon.title.ilike(f"%{query_text}%"),
+                    Sermon.description.ilike(f"%{query_text}%"),
+                )
+            )
+            .limit(top_k)
+        )
+        return session.exec(stmt).all()
 
 
 def get_subcategories(category: str) -> list[str]:

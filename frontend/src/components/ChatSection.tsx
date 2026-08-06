@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { askChat, ChatResponse } from "@/lib/api";
+import {
+  askChat,
+  searchSermons,
+  ChatResponse,
+  Sermon,
+} from "@/lib/api";
+import SermonCard from "@/components/SermonCard";
 
 export default function ChatSection() {
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"chat" | "search">("chat");
   const [response, setResponse] = useState<ChatResponse | null>(null);
+  const [searchResults, setSearchResults] = useState<Sermon[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,9 +22,17 @@ export default function ChatSection() {
     if (!query.trim()) return;
     setLoading(true);
     setError(null);
+    setResponse(null);
+    setSearchResults(null);
+
     try {
-      const res = await askChat(query);
-      setResponse(res);
+      if (mode === "search") {
+        const results = await searchSermons(query, 3);
+        setSearchResults(results);
+      } else {
+        const res = await askChat(query);
+        setResponse(res);
+      }
     } catch {
       setError("Something went wrong reaching the Vault Keeper. Try again in a moment.");
     } finally {
@@ -41,6 +57,45 @@ export default function ChatSection() {
           the Vault will surface the sermon that fits.
         </p>
 
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("chat")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                mode === "chat"
+                  ? "bg-vault-magenta text-white"
+                  : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
+              }`}
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("search")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                mode === "search"
+                  ? "bg-vault-magenta text-white"
+                  : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
+              }`}
+            >
+              Search
+            </button>
+          </div>
+          <p
+            className="text-xs text-gray-400"
+            title={
+              mode === "chat"
+                ? "Chat will use database search and then refine the answer with Groq."
+                : "Search will return direct sermon title matches instead of an AI-polished response."
+            }
+          >
+            {mode === "chat"
+              ? "Chat mode: refined recommendation."
+              : "Search mode: direct sermon title match search."}
+          </p>
+        </div>
+
         <form onSubmit={handleAsk} className="mt-8 flex flex-col sm:flex-row gap-3">
           <input
             type="text"
@@ -60,7 +115,15 @@ export default function ChatSection() {
 
         {error && <p className="mt-4 text-red-300">{error}</p>}
 
-        {response && (
+        {mode === "search" && searchResults && (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {searchResults.map((sermon) => (
+              <SermonCard key={sermon.id} sermon={sermon} />
+            ))}
+          </div>
+        )}
+
+        {mode === "chat" && response && (
           <div className="mt-8 rounded-2xl bg-vault-cream p-6">
             <p className="text-vault-charcoal whitespace-pre-line leading-relaxed">
               {response.answer}

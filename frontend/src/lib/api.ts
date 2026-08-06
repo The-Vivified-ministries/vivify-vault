@@ -23,6 +23,18 @@ export type ChatResponse = {
   results: SearchResult[];
 };
 
+export async function searchSermons(
+  query: string,
+  top_k: number = 3
+): Promise<Sermon[]> {
+  const res = await fetch(
+    `${API_URL}/search?${new URLSearchParams({ q: query, top_k: String(top_k) })}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error("Search request failed");
+  return res.json();
+}
+
 // Server-side cached — used for the top-level category list on first
 // paint, so it renders fast regardless of backend warmth.
 export async function getCategoriesCached(): Promise<string[]> {

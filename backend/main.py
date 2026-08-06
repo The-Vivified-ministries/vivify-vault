@@ -10,7 +10,7 @@ from models import (
     ToggleRequest,
     SyncResult,
 )
-from services import embeddings, pinecone_service, groq_service, sync_service, db_queries
+from services import embeddings, groq_service, sync_service, db_queries
 
 app = FastAPI(title="Vivify Vault API")
 
@@ -66,39 +66,43 @@ def sermons(
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    vector = embeddings.embed_text(req.query)
-    matches = pinecone_service.query_sermons(vector, top_k=req.top_k)
+    sermons = db_queries.search_sermons(req.query, top_k=req.top_k)
 
     sermons_for_llm = [
         {
-            "title": m["metadata"]["title"],
-            "categories": m["metadata"].get("categories", []),
-            "description": m["metadata"]["description"],
-            "link": m["metadata"].get("spotify_link")
-            or m["metadata"].get("apple_music_link", ""),
+            "title": s.title,
+            "categories": s.categories,
+            "description": s.description,
+            "link": s.spotify_link or s.apple_music_link or "",
         }
-        for m in matches
+        for s in sermons
     ]
     answer = groq_service.generate_recommendation(req.query, sermons_for_llm)
 
     results = [
         SearchResult(
-            id=m["id"],
-            score=m["score"],
+            id=str(s.id),
+            score=0.0,
             sermon=SermonOut(
-                id=_coerce_int(m["id"]),
-                title=m["metadata"]["title"],
-                year=m["metadata"].get("year") or None,
-                categories=m["metadata"].get("categories", []),
-                subcategories=m["metadata"].get("subcategories", []),
-                description=m["metadata"]["description"],
-                spotify_link=m["metadata"].get("spotify_link") or None,
-                apple_music_link=m["metadata"].get("apple_music_link") or None,
+                id=s.id or 0,
+                title=s.title,
+                year=s.year,
+                categories=s.categories,
+                subcategories=s.subcategories,
+                description=s.description,
+                spotify_link=s.spotify_link,
+                apple_music_link=s.apple_music_link,
             ),
         )
-        for m in matches
+        for s in sermons
     ]
     return ChatResponse(answer=answer, llm_used=groq_service.is_enabled(), results=results)
+
+
+@app.get("/search", response_model=list[SermonOut])
+def search(q: str, top_k: int = 3):
+    sermons = db_queries.search_sermons(q, top_k=top_k)
+    return [SermonOut(**s.dict()) for s in sermons]
 
 
 @app.post("/admin/sync", response_model=SyncResult)

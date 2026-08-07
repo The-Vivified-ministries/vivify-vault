@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from db import engine
 from models import Sermon
 from services import embeddings
@@ -25,11 +25,17 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
             query_vector = embeddings.embed_text(query_text)
             stmt = (
                 select(Sermon)
-                .where(Sermon.embedding != None)
-                .order_by(Sermon.embedding.distance(query_vector))
-                .limit(top_k)
+                .from_statement(
+                    text(
+                        "SELECT * FROM sermons "
+                        "WHERE embedding IS NOT NULL "
+                        "ORDER BY embedding <#> CAST(:q AS vector(384)) "
+                        "LIMIT :k"
+                    )
+                )
+                .params(q=query_vector, k=top_k)
             )
-            return session.exec(stmt).all()
+            return session.exec(stmt).scalars().all()
 
         stmt = (
             select(Sermon)

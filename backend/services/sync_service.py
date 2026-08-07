@@ -3,7 +3,7 @@ import re
 from sqlmodel import Session, select
 from db import engine
 from models import Sermon
-from services import embeddings, pinecone_service
+from services import embeddings
 
 
 def _content_hash(s: Sermon) -> str:
@@ -45,25 +45,8 @@ def run_sync() -> dict:
                     for s, _ in to_embed
                 ]
                 vectors = embeddings.embed_texts(texts)
-                items = [
-                    {
-                        "id": str(s.id),
-                        "values": vec,
-                        "metadata": {
-                            "title": s.title,
-                            "year": s.year or 0,
-                            "categories": s.categories,
-                            "subcategories": s.subcategories,
-                            "description": s.description,
-                            "spotify_link": s.spotify_link or "",
-                            "apple_music_link": s.apple_music_link or "",
-                        },
-                    }
-                    for (s, _), vec in zip(to_embed, vectors)
-                ]
-                pinecone_service.upsert_sermons(items)
-
-                for s, h in to_embed:
+                for (s, h), vec in zip(to_embed, vectors):
+                    s.embedding = vec
                     s.last_synced_hash = h
                     session.add(s)
                 session.commit()

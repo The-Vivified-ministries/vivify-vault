@@ -77,7 +77,7 @@ def main():
         session.commit()
 
     print(f"Created: {created}, Updated: {updated}")
-    print("Next: POST /admin/sync (with your X-Admin-Key) to push these into Pinecone for search.")
+    print("Next: POST /admin/sync (with your X-Admin-Key) to compute and store embeddings in Postgres.")
 
 
 if __name__ == "__main__":

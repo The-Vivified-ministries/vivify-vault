@@ -2,6 +2,7 @@ from sqlmodel import Session, select
 from sqlalchemy import func, or_
 from db import engine
 from models import Sermon
+from services import embeddings
 
 
 def get_all_categories() -> list[str]:
@@ -16,6 +17,20 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
         return []
 
     with Session(engine) as session:
+        has_embeddings = session.exec(
+            select(Sermon.id).where(Sermon.embedding != None).limit(1)
+        ).first()
+
+        if has_embeddings:
+            query_vector = embeddings.embed_text(query_text)
+            stmt = (
+                select(Sermon)
+                .where(Sermon.embedding != None)
+                .order_by(Sermon.embedding.distance(query_vector))
+                .limit(top_k)
+            )
+            return session.exec(stmt).all()
+
         stmt = (
             select(Sermon)
             .where(

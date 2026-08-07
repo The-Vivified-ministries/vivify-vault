@@ -11,12 +11,6 @@ class Settings:
     # non-persistent backend like Render's free tier.
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
-    # Pinecone (search index only — derived from Postgres, not authoritative)
-    PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
-    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "vivify-vault-sermons")
-    PINECONE_CLOUD: str = os.getenv("PINECONE_CLOUD", "aws")
-    PINECONE_REGION: str = os.getenv("PINECONE_REGION", "us-east-1")
-
     # Groq
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")

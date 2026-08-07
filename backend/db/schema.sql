@@ -9,8 +9,9 @@ CREATE TABLE IF NOT EXISTS sermons (
     description TEXT NOT NULL DEFAULT '',
     spotify_link TEXT,
     apple_music_link TEXT,
-    -- Tracks what was last embedded into Pinecone, so sync only
-    -- re-embeds rows that actually changed. Not something you need to
+    embedding vector(384),
+    -- Tracks what was last synced, so sync only re-embeds rows that
+    -- actually changed. Not something you need to
     -- touch when editing sermons in the Table Editor.
     last_synced_hash TEXT,
 
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS sermons (
 CREATE INDEX IF NOT EXISTS idx_sermons_categories ON sermons USING GIN (categories);
 CREATE INDEX IF NOT EXISTS idx_sermons_subcategories ON sermons USING GIN (subcategories);
 CREATE INDEX IF NOT EXISTS idx_sermons_year ON sermons (year);
+CREATE INDEX IF NOT EXISTS idx_sermons_embedding ON sermons USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- Optional: a couple of test rows to confirm everything's wired up
 -- before your PM starts entering real data. Safe to delete after testing.

@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy import ARRAY, String
+from pgvector.sqlalchemy import Vector
 from pydantic import BaseModel
 
 
@@ -14,6 +15,7 @@ class Sermon(SQLModel, table=True):
     description: str = ""
     spotify_link: str | None = None
     apple_music_link: str | None = None
+    embedding: list[float] | None = Field(default=None, sa_column=Column(Vector(384)))
     last_synced_hash: str | None = None
 
 

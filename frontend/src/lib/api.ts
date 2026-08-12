@@ -25,7 +25,7 @@ export type ChatResponse = {
 
 export async function searchSermons(
   query: string,
-  top_k: number = 3
+  top_k: number = 50
 ): Promise<Sermon[]> {
   const res = await fetch(
     `${API_URL}/search?${new URLSearchParams({ q: query, top_k: String(top_k) })}`,
@@ -90,11 +90,11 @@ export async function getSermons(params: {
   return res.json();
 }
 
-export async function askChat(query: string): Promise<ChatResponse> {
+export async function askChat(query: string, top_k: number = 50): Promise<ChatResponse> {
   const res = await fetch(`${API_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, top_k: 3 }),
+    body: JSON.stringify({ query, top_k }),
   });
   if (!res.ok) throw new Error("Chat request failed");
   return res.json();

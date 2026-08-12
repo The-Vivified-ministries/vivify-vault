@@ -29,11 +29,15 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
                     text(
                         "SELECT * FROM sermons "
                         "WHERE embedding IS NOT NULL "
-                        "ORDER BY embedding <#> CAST(:q AS vector(384)) "
+                        "ORDER BY ("
+                        "  0.75 * (1 - (embedding <#> CAST(:q AS vector(384)))) + "
+                        "  0.25 * (CASE WHEN title ILIKE :t THEN 0.6 ELSE 0 END + "
+                        "               CASE WHEN description ILIKE :t THEN 0.4 ELSE 0 END)"
+                        ") DESC "
                         "LIMIT :k"
                     )
                 )
-                .params(q=query_vector, k=top_k)
+                .params(q=query_vector, t=f"%{query_text}%", k=top_k)
             )
             return session.exec(stmt).scalars().all()
 

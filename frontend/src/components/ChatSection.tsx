@@ -27,10 +27,10 @@ export default function ChatSection() {
 
     try {
       if (mode === "search") {
-        const results = await searchSermons(query, 3);
+        const results = await searchSermons(query, 50);
         setSearchResults(results);
       } else {
-        const res = await askChat(query);
+        const res = await askChat(query, 50);
         setResponse(res);
       }
     } catch {

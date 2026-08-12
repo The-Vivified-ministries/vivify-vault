@@ -40,6 +40,11 @@ export default function ChatSection() {
     }
   }
 
+  function handleClearResults() {
+    setSearchResults(null);
+    setError(null);
+  }
+
   return (
     <section
       id="ask-the-vault"
@@ -116,11 +121,25 @@ export default function ChatSection() {
         {error && <p className="mt-4 text-red-300">{error}</p>}
 
         {mode === "search" && searchResults && (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {searchResults.map((sermon) => (
-              <SermonCard key={sermon.id} sermon={sermon} />
-            ))}
-          </div>
+          <>
+            <div className="mt-6 flex items-center justify-between gap-4">
+              <p className="text-sm text-gray-300">
+                Showing {searchResults.length} sermon{searchResults.length === 1 ? "" : "s"}.
+              </p>
+              <button
+                type="button"
+                onClick={handleClearResults}
+                className="rounded-full bg-vault-stone px-4 py-2 text-sm font-semibold text-vault-charcoal hover:bg-vault-lavender"
+              >
+                Clear results
+              </button>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {searchResults.map((sermon) => (
+                <SermonCard key={sermon.id} sermon={sermon} />
+              ))}
+            </div>
+          </>
         )}
 
         {mode === "chat" && response && (

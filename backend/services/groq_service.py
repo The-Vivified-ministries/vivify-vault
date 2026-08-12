@@ -63,6 +63,7 @@ def _template_response(sermons: list[dict]) -> str:
     if not sermons:
         return "I couldn't find a sermon that matches — try rephrasing your question."
     lines = ["Here's what I found that might help:"]
-    for s in sermons:
-        lines.append(f"- \"{s['title']}\" ({', '.join(s['categories'])}) — {s['link']}")
+    for s in sermons[:5]:  # Limit to top 5 results
+        # List only the title and categories to avoid overwhelming the user with too much text
+        lines.append(f"- \"{s['title']}\" ({', '.join(s['categories'])})")
     return "\n".join(lines)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   askChat,
   searchSermons,
@@ -16,6 +16,15 @@ export default function ChatSection() {
   const [searchResults, setSearchResults] = useState<Sermon[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchResults, response]);
+
+  const pageSize = 10;
+  const totalItems = searchResults ? searchResults.length : response ? response.results.length : 0;
+  const totalPages = totalItems > 0 ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
 
   async function handleAsk(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +59,7 @@ export default function ChatSection() {
       id="ask-the-vault"
       className="relative w-full bg-vault-charcoal py-16 px-6 md:px-12"
     >
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-6xl px-6">
         <span className="inline-block rounded-full bg-vault-gold px-4 py-1 text-xs font-bold uppercase tracking-wide text-vault-charcoal">
           Ask the Vault
         </span>
@@ -124,18 +133,42 @@ export default function ChatSection() {
           <>
             <div className="mt-6 flex items-center justify-between gap-4">
               <p className="text-sm text-gray-300">
-                Showing {searchResults.length} sermon{searchResults.length === 1 ? "" : "s"}.
+                Showing {Math.min((page - 1) * pageSize + 1, searchResults.length)}-
+                {Math.min(page * pageSize, searchResults.length)} of {searchResults.length} sermons.
               </p>
-              <button
-                type="button"
-                onClick={handleClearResults}
-                className="rounded-full bg-vault-stone px-4 py-2 text-sm font-semibold text-vault-charcoal hover:bg-vault-lavender"
-              >
-                Clear results
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearResults}
+                  className="rounded-full bg-vault-stone px-4 py-2 text-sm font-semibold text-vault-charcoal hover:bg-vault-lavender"
+                >
+                  Clear results
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm text-gray-300">
+                    Page {page} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {searchResults.map((sermon) => (
+            <div className="mt-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {searchResults.slice((page - 1) * pageSize, page * pageSize).map((sermon) => (
                 <SermonCard key={sermon.id} sermon={sermon} />
               ))}
             </div>
@@ -154,43 +187,42 @@ export default function ChatSection() {
               </p>
             )}
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {response.results.map((r) => (
-                <div key={r.id} className="rounded-xl bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-vault-magenta">
-                    {r.sermon.categories.join(" • ")}
-                  </p>
-                  <p className="mt-1 font-bold text-vault-charcoal">
-                    {r.sermon.title}
-                  </p>
-                  <div
-                    className="mt-1 text-sm text-gray-600 line-clamp-2"
-                    dangerouslySetInnerHTML={{ __html: r.sermon.description }}
-                  />
-                  <div className="mt-2 flex gap-3">
-                    {r.sermon.spotify_link && (
-                      <a
-                        href={r.sermon.spotify_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-vault-magenta hover:underline"
-                      >
-                        Spotify
-                      </a>
-                    )}
-                    {r.sermon.apple_music_link && (
-                      <a
-                        href={r.sermon.apple_music_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-vault-magenta hover:underline"
-                      >
-                        Apple Music
-                      </a>
-                    )}
+            <div className="mt-6">
+              <p className="text-sm text-gray-600">
+                Showing {Math.min((page - 1) * pageSize + 1, response.results.length)}-
+                {Math.min(page * pageSize, response.results.length)} of {response.results.length} sermons.
+              </p>
+              <div className="mt-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {response.results.slice((page - 1) * pageSize, page * pageSize).map((r) => (
+                  <div key={r.id} className="rounded-xl bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-vault-magenta">
+                      {r.sermon.categories.join(" • ")}
+                    </p>
+                    <p className="mt-1 font-bold text-vault-charcoal">
+                      {r.sermon.title}
+                    </p>
+                    <div
+                      className="mt-1 text-sm text-gray-600 line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: r.sermon.description }}
+                    />
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPage(p)}
+                    className={`rounded-full px-3 py-2 text-sm font-semibold ${
+                      p === page ? "bg-vault-magenta text-white" : "bg-vault-stone text-vault-charcoal"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

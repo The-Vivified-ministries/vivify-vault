@@ -39,7 +39,7 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
                 )
                 .params(q=query_vector, t=f"%{query_text}%", k=top_k)
             )
-            return session.exec(stmt).scalars().all()
+            return session.exec(stmt).all()
 
         stmt = (
             select(Sermon)
@@ -49,6 +49,46 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
                     Sermon.description.ilike(f"%{query_text}%"),
                 )
             )
+            .limit(top_k)
+        )
+        return session.exec(stmt).all()
+
+
+def get_all_sermons(limit: int = 200) -> list[Sermon]:
+    with Session(engine) as session:
+        stmt = select(Sermon).order_by(Sermon.title).limit(limit)
+        return session.exec(stmt).all()
+
+
+def save_sermon(sermon_data: dict) -> Sermon:
+    with Session(engine) as session:
+        sermon_id = sermon_data.get("id")
+        if sermon_id:
+            sermon = session.get(Sermon, sermon_id)
+            if sermon is None:
+                raise ValueError("Sermon not found")
+            for field, value in sermon_data.items():
+                if field != "id":
+                    setattr(sermon, field, value)
+        else:
+            sermon = Sermon(**sermon_data)
+            session.add(sermon)
+        session.commit()
+        session.refresh(sermon)
+        return sermon
+
+
+def search_sermons_titles(query: str, top_k: int = 50) -> list[Sermon]:
+    """Pure database search over sermon titles (lexical only)."""
+    query_text = query.strip()
+    if not query_text or top_k <= 0:
+        return []
+
+    with Session(engine) as session:
+        stmt = (
+            select(Sermon)
+            .where(Sermon.title.ilike(f"%{query_text}%"))
+            .order_by(Sermon.title)
             .limit(top_k)
         )
         return session.exec(stmt).all()

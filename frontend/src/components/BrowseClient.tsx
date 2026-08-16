@@ -150,7 +150,7 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
 
       {/* Level 1: Categories */}
       {!selectedCategory && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {loadingCategories ? (
             <p className="text-gray-500">Loading categories…</p>
           ) : categoryOptions.length === 0 ? (
@@ -187,7 +187,7 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
 
       {/* Level 2: Subcategories */}
       {selectedCategory && !selectedSubcategory && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {subcategories.length === 0 ? (
             <p className="text-gray-500">Loading topics…</p>
           ) : (
@@ -206,7 +206,7 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
 
       {/* Level 3: Sermons */}
       {selectedSubcategory && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {loading ? (
             <p className="text-gray-500">Loading sermons…</p>
           ) : sermons.length === 0 ? (

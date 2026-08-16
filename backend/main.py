@@ -6,11 +6,12 @@ from models import (
     ChatRequest,
     ChatResponse,
     SearchResult,
+    SermonAdminRequest,
     SermonOut,
     ToggleRequest,
     SyncResult,
 )
-from services import embeddings, groq_service, sync_service, db_queries
+from services import embeddings, email_service, groq_service, sync_service, db_queries
 
 app = FastAPI(title="Vivify Vault API")
 
@@ -101,7 +102,7 @@ def chat(req: ChatRequest):
 
 @app.get("/search", response_model=list[SermonOut])
 def search(q: str, top_k: int = 3):
-    sermons = db_queries.search_sermons(q, top_k=top_k)
+    sermons = db_queries.search_sermons_titles(q, top_k=top_k)
     return [SermonOut(**s.dict()) for s in sermons]
 
 
@@ -110,6 +111,32 @@ def admin_sync(x_admin_key: str | None = Header(default=None)):
     _check_admin(x_admin_key)
     result = sync_service.run_sync()
     return SyncResult(**result)
+
+
+@app.get("/admin/sermons", response_model=list[SermonOut])
+def admin_get_sermons(x_admin_key: str | None = Header(default=None)):
+    _check_admin(x_admin_key)
+    sermons = db_queries.get_all_sermons(limit=500)
+    return [SermonOut(**s.dict()) for s in sermons]
+
+
+@app.post("/admin/sermons", response_model=SermonOut)
+def admin_save_sermon(
+    body: SermonAdminRequest, x_admin_key: str | None = Header(default=None)
+):
+    _check_admin(x_admin_key)
+    try:
+        sermon = db_queries.save_sermon(body.sermon.dict())
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    action = "created" if body.sermon.id is None else "updated"
+    email_service.send_admin_notification(
+        body.user_name,
+        action,
+        sermon.dict(),
+    )
+    return SermonOut(**sermon.dict())
 
 
 @app.post("/admin/toggle-llm")

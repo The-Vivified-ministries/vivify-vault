@@ -43,6 +43,22 @@ class SearchResult(BaseModel):
     sermon: SermonOut
 
 
+class SermonAdminPayload(BaseModel):
+    id: int | None = None
+    title: str
+    year: int | None = None
+    categories: list[str] = []
+    subcategories: list[str] = []
+    description: str = ""
+    spotify_link: str | None = None
+    apple_music_link: str | None = None
+
+
+class SermonAdminRequest(BaseModel):
+    user_name: str
+    sermon: SermonAdminPayload
+
+
 class ChatResponse(BaseModel):
     answer: str
     llm_used: bool

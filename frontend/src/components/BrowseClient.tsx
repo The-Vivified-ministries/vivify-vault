@@ -83,7 +83,7 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
   }, [selectedCategory, selectedSubcategory, selectedYear]);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+    <section className="mx-auto max-w-screen-2xl px-6 py-16 md:px-12">
       <h2 className="text-2xl font-bold text-vault-charcoal mb-2">
         Browse by topic
       </h2>

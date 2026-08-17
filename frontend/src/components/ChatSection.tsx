@@ -59,7 +59,7 @@ export default function ChatSection() {
       id="ask-the-vault"
       className="relative w-full bg-vault-charcoal py-16 px-6 md:px-12"
     >
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-screen-2xl px-6">
         <span className="inline-block rounded-full bg-vault-gold px-4 py-1 text-xs font-bold uppercase tracking-wide text-vault-charcoal">
           Ask the Vault
         </span>

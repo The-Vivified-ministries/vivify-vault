@@ -9,3 +9,5 @@ frontend/.next/
 frontend/.env.local
 backend/data
 .github/workflows/sync-scheduled.yml
+admin-frontend/.next/
+admin-frontend/node_modules/

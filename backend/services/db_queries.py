@@ -39,7 +39,21 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
                 )
                 .params(q=query_vector, t=f"%{query_text}%", k=top_k)
             )
-            return session.exec(stmt).all()
+            rows = session.exec(stmt).all()
+            # `from_statement` with raw SQL may return Row objects depending on SQLAlchemy
+            # Convert rows to `Sermon` instances if necessary so callers can access attributes.
+            sermons = []
+            for r in rows:
+                if isinstance(r, Sermon):
+                    sermons.append(r)
+                else:
+                    # SQLAlchemy Row -> mapping of column names
+                    try:
+                        mapping = dict(r._mapping)
+                    except Exception:
+                        mapping = dict(r)
+                    sermons.append(Sermon(**mapping))
+            return sermons
 
         stmt = (
             select(Sermon)

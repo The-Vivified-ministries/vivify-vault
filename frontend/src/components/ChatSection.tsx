@@ -193,20 +193,11 @@ export default function ChatSection() {
                 {Math.min(page * pageSize, response.results.length)} of {response.results.length} sermons.
               </p>
               <div className="mt-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {response.results.slice((page - 1) * pageSize, page * pageSize).map((r) => (
-                  <div key={r.id} className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-vault-magenta">
-                      {r.sermon.categories.join(" • ")}
-                    </p>
-                    <p className="mt-1 font-bold text-vault-charcoal">
-                      {r.sermon.title}
-                    </p>
-                    <div
-                      className="mt-1 text-sm text-gray-600 line-clamp-2"
-                      dangerouslySetInnerHTML={{ __html: r.sermon.description }}
-                    />
-                  </div>
-                ))}
+                  {response.results
+                    .slice((page - 1) * pageSize, page * pageSize)
+                    .map((r) => (
+                      <SermonCard key={r.id} sermon={r.sermon} />
+                    ))}
               </div>
 
               <div className="mt-4 flex items-center gap-2">

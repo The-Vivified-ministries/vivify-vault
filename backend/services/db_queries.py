@@ -1,8 +1,10 @@
 from sqlmodel import Session, select
-from sqlalchemy import func, or_, text
+import logging
+from sqlalchemy import func, or_, text, case
 from db import engine
 from models import Sermon
 from services import embeddings
+from pgvector.sqlalchemy import Vector
 
 
 def get_all_categories() -> list[str]:
@@ -13,59 +15,46 @@ def get_all_categories() -> list[str]:
 
 def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
     query_text = query.strip()
+
     if not query_text or top_k <= 0:
         return []
 
     with Session(engine) as session:
-        has_embeddings = session.exec(
-            select(Sermon.id).where(Sermon.embedding != None).limit(1)
-        ).first()
+        query_vector = embeddings.embed_text(query_text)
 
-        if has_embeddings:
-            query_vector = embeddings.embed_text(query_text)
-            stmt = (
-                select(Sermon)
-                .from_statement(
-                    text(
-                        "SELECT * FROM sermons "
-                        "WHERE embedding IS NOT NULL "
-                        "ORDER BY ("
-                        "  0.75 * (1 - (embedding <#> CAST(:q AS vector(384)))) + "
-                        "  0.25 * (CASE WHEN title ILIKE :t THEN 0.6 ELSE 0 END + "
-                        "               CASE WHEN description ILIKE :t THEN 0.4 ELSE 0 END)"
-                        ") DESC "
-                        "LIMIT :k"
-                    )
+        similarity = (
+            0.75 * (1 - Sermon.embedding.cosine_distance(query_vector))
+            +
+            0.25 * (
+                case(
+                    (Sermon.title.ilike(f"%{query_text}%"), 0.6),
+                    else_=0
                 )
-                .params(q=query_vector, t=f"%{query_text}%", k=top_k)
+                +
+                case(
+                    (Sermon.description.ilike(f"%{query_text}%"), 0.4),
+                    else_=0
+                )
             )
-            rows = session.exec(stmt).all()
-            # `from_statement` with raw SQL may return Row objects depending on SQLAlchemy
-            # Convert rows to `Sermon` instances if necessary so callers can access attributes.
-            sermons = []
-            for r in rows:
-                if isinstance(r, Sermon):
-                    sermons.append(r)
-                else:
-                    # SQLAlchemy Row -> mapping of column names
-                    try:
-                        mapping = dict(r._mapping)
-                    except Exception:
-                        mapping = dict(r)
-                    sermons.append(Sermon(**mapping))
-            return sermons
+        )
 
         stmt = (
             select(Sermon)
-            .where(
-                or_(
-                    Sermon.title.ilike(f"%{query_text}%"),
-                    Sermon.description.ilike(f"%{query_text}%"),
-                )
-            )
+            .where(Sermon.embedding.is_not(None))
+            .order_by(similarity.desc())
             .limit(top_k)
         )
-        return session.exec(stmt).all()
+
+        sermons = session.exec(stmt).all()
+
+        for sermon in sermons:
+            print(
+                "RESULT:",
+                sermon.id,
+                repr(sermon.title)
+            )
+
+        return sermons
 
 
 def get_all_sermons(limit: int = 200) -> list[Sermon]:

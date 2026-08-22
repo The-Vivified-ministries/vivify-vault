@@ -5,12 +5,11 @@ from db import engine
 from models import Sermon
 from services import embeddings
 from pgvector.sqlalchemy import Vector
+from taxonomy import get_categories, get_subcategories as get_fixed_subcategories, is_valid_pair
 
 
 def get_all_categories() -> list[str]:
-    with Session(engine) as session:
-        rows = session.exec(select(func.unnest(Sermon.categories)).distinct()).all()
-        return sorted(set(rows))
+    return get_categories()
 
 
 def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
@@ -23,9 +22,9 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
         query_vector = embeddings.embed_text(query_text)
 
         similarity = (
-            0.75 * (1 - Sermon.embedding.cosine_distance(query_vector))
+            0.65 * (1 - Sermon.embedding.cosine_distance(query_vector))
             +
-            0.25 * (
+            0.35 * (
                 case(
                     (Sermon.title.ilike(f"%{query_text}%"), 0.6),
                     else_=0
@@ -98,14 +97,7 @@ def search_sermons_titles(query: str, top_k: int = 50) -> list[Sermon]:
 
 
 def get_subcategories(category: str) -> list[str]:
-    with Session(engine) as session:
-        stmt = (
-            select(func.unnest(Sermon.subcategories))
-            .where(Sermon.categories.any(category))
-            .distinct()
-        )
-        rows = session.exec(stmt).all()
-        return sorted(set(rows))
+    return get_fixed_subcategories(category)
 
 
 def get_years() -> list[int]:
@@ -119,6 +111,9 @@ def get_sermons(
     subcategory: str | None = None,
     year: int | None = None,
 ) -> list[Sermon]:
+    if category and subcategory and not is_valid_pair(category, subcategory):
+        return []
+
     with Session(engine) as session:
         stmt = select(Sermon)
         if category:

@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Vivify Vault",
   description: "A Vault for our sermons for your eddification",
+  icons: {
+    icon: "/tvc-logo2.png",
+    shortcut: "/tvc-logo2.png",
+    apple: "/tvc-logo2.png",
+  },
 };
 
 export default function RootLayout({

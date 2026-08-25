@@ -105,8 +105,8 @@ export default function ChatSection() {
             }
           >
             {mode === "chat"
-              ? "Chat mode: refined recommendation."
-              : "Search mode: direct sermon title match search."}
+              ? "Chat mode: Describe what you are facing and we'll point you to the right sermon."
+              : "Search mode: Search by sermon title, preacher or scripture."}
           </p>
         </div>
 
@@ -115,7 +115,11 @@ export default function ChatSection() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. I'm anxious about the future and don't know how to trust God"
+            placeholder={
+              mode === "chat"
+                ? "e.g. I'm anxious about the future and don't know how to trust God"
+                : "e.g. Dauntless or Romans or Amara Jonathan"
+            }
             className="flex-1 rounded-xl px-5 py-4 text-vault-charcoal placeholder:text-gray-500 bg-white focus:outline-none focus:ring-4 focus:ring-vault-gold"
           />
           <button

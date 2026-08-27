@@ -32,7 +32,7 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
             rel="noopener noreferrer"
             className="text-sm font-semibold text-vault-magenta hover:underline"
           >
-            Apple Music
+            Apple Podcast
           </a>
         )}
       </div>

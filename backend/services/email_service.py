@@ -1,6 +1,9 @@
 import smtplib
+import logging
 from email.message import EmailMessage
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def send_admin_notification(user_name: str, action: str, sermon: dict) -> None:
@@ -28,6 +31,16 @@ def send_admin_notification(user_name: str, action: str, sermon: dict) -> None:
     ]
     message.set_content("\n".join(body_lines))
 
-    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as smtp:
-        smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        smtp.send_message(message)
+    try:
+        smtp_class = smtplib.SMTP_SSL if settings.SMTP_PORT == 465 else smtplib.SMTP
+        with smtp_class(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as smtp:
+            if settings.SMTP_PORT != 465:
+                smtp.starttls()
+            smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException) as exc:
+        logger.warning(
+            "Could not send admin notification email for %s: %s",
+            action,
+            exc,
+        )

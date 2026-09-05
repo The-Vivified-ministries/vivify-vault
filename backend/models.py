@@ -59,6 +59,11 @@ class SermonAdminRequest(BaseModel):
     sermon: SermonAdminPayload
 
 
+class BulkSermonCreateRequest(BaseModel):
+    user_name: str
+    csv_text: str
+
+
 class ChatResponse(BaseModel):
     answer: str
     llm_used: bool

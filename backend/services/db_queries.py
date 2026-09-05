@@ -1,3 +1,5 @@
+import re
+
 from sqlmodel import Session, select
 import logging
 from sqlalchemy import func, or_, text, case
@@ -6,6 +8,16 @@ from models import Sermon
 from services import embeddings
 from pgvector.sqlalchemy import Vector
 from taxonomy import get_categories, get_subcategories as get_fixed_subcategories, is_valid_pair
+
+
+def _normalize_taxonomy_values(values: list[str] | None) -> list[str]:
+    normalized = []
+    for value in values or []:
+        label = re.sub(r"\s+", " ", value.strip()).title()
+        label = re.sub(r"(['’])S\b", r"\1s", label)
+        if label and label not in normalized:
+            normalized.append(label)
+    return normalized
 
 
 def get_all_categories() -> list[str]:
@@ -63,6 +75,11 @@ def get_all_sermons(limit: int = 200) -> list[Sermon]:
 
 
 def save_sermon(sermon_data: dict) -> Sermon:
+    sermon_data = dict(sermon_data)
+    if "categories" in sermon_data:
+        sermon_data["categories"] = _normalize_taxonomy_values(sermon_data["categories"])
+    if "subcategories" in sermon_data:
+        sermon_data["subcategories"] = _normalize_taxonomy_values(sermon_data["subcategories"])
     with Session(engine) as session:
         sermon_id = sermon_data.get("id")
         if sermon_id:
@@ -78,6 +95,25 @@ def save_sermon(sermon_data: dict) -> Sermon:
         session.commit()
         session.refresh(sermon)
         return sermon
+
+
+def bulk_create_sermons(sermon_data: list[dict]) -> list[Sermon]:
+    if not sermon_data:
+        raise ValueError("At least one sermon is required")
+
+    normalized_data = []
+    for data in sermon_data:
+        item = dict(data)
+        item["categories"] = _normalize_taxonomy_values(item.get("categories"))
+        item["subcategories"] = _normalize_taxonomy_values(item.get("subcategories"))
+        normalized_data.append(item)
+    sermons = [Sermon(**data) for data in normalized_data]
+    with Session(engine) as session:
+        session.add_all(sermons)
+        session.commit()
+        for sermon in sermons:
+            session.refresh(sermon)
+        return sermons
 
 
 def search_sermons_titles(query: str, top_k: int = 50) -> list[Sermon]:

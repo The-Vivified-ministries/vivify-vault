@@ -19,10 +19,10 @@ class Settings:
     # Admin
     ADMIN_SECRET: str = os.getenv("ADMIN_SECRET", "change-me")
     SUPABASE_OWNER_EMAIL: str = os.getenv("SUPABASE_OWNER_EMAIL", "")
-    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "").strip()
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "465"))
-    SMTP_USER: str = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_USER: str = os.getenv("SMTP_USER", "").strip()
+    SMTP_PASSWORD: str = "".join(os.getenv("SMTP_PASSWORD", "").split())
 
     # Embedding model — no PyTorch (see services/embeddings.py)
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")

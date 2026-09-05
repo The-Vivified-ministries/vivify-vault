@@ -154,20 +154,38 @@ export default function Page() {
   }
 
   return (
-    <main className="container py-10">
-      <div className="rounded-3xl bg-slate-950/90 p-8 shadow-2xl shadow-slate-950/30">
-        <h1 className="text-4xl font-bold text-white">Vivify Vault Admin</h1>
-        <p className="mt-3 text-slate-300">
-          Use your admin secret and name to load sermons, edit metadata, or add new sermons directly.
-        </p>
-        {status?.includes("successfully") && (
-          <div role="status" className="mt-5 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-200">
+    <main className="container py-6 sm:py-10">
+      <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/90 shadow-2xl shadow-black/30">
+        <header className="border-b border-white/10 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-5 py-6 sm:px-8">
+          <div className="flex items-center gap-3">
+          <img
+            src="/tvc-logo.png"
+            alt="Vivify Vault logo"
+            className="h-[150px] w-[150px] bg-transparent object-contain"
+            style={{ width: "150px", height: "150px", minWidth: "150px", minHeight: "150px", maxWidth: "150px", maxHeight: "150px" }}
+          />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">Vivify Vault</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Admin workspace</h1>
+            </div>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
+            Manage sermon metadata, import new entries, and keep the vault ready for publishing.
+          </p>
+        </header>
+
+        {status && (
+          <div role="status" className={`mx-5 mt-5 rounded-xl border px-4 py-3 text-sm font-medium sm:mx-8 ${status.includes("successfully") ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-amber-400/30 bg-amber-400/10 text-amber-100"}`}>
             {status}
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[320px_1fr]">
-          <div className="space-y-4 rounded-3xl border border-slate-800 bg-slate-900/90 p-6">
+        <div className="grid gap-5 p-5 sm:p-8 lg:grid-cols-[340px_1fr]">
+          <aside className="space-y-5 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Access</p>
+              <p className="mt-1 text-sm text-slate-400">Authenticate to manage the vault.</p>
+            </div>
             <label className="block text-sm text-slate-300" htmlFor="adminKey">
               Admin key
             </label>
@@ -181,7 +199,7 @@ export default function Page() {
             <button
               type="button"
               onClick={() => setShowAdminKey((visible) => !visible)}
-              className="text-xs font-semibold text-sky-300 hover:text-sky-200"
+              className="-mt-3 text-left text-xs font-semibold text-sky-300 hover:text-sky-200"
             >
               {showAdminKey ? "Hide admin key" : "Show admin key"}
             </button>
@@ -214,8 +232,14 @@ export default function Page() {
               {syncing ? "Syncing…" : "Run sync"}
             </button>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-4">
-              <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Sermon list</p>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Library</p>
+                  <p className="mt-1 text-lg font-semibold text-white">Sermons</p>
+                </div>
+                {sermons.length > 0 && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-400">{sermons.length} loaded</span>}
+              </div>
               <div className="mt-3 max-h-[420px] space-y-2 overflow-auto">
                 {sermons.length === 0 ? (
                   <p className="text-slate-500">No sermons loaded yet.</p>
@@ -251,9 +275,14 @@ export default function Page() {
                 <button type="submit" disabled={loading || syncing} className="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Add sermons</button>
               </form>
             </div>
-          </div>
+          </aside>
 
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-slate-800 bg-slate-900/90 p-6">
+          <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-white/10 bg-slate-900/70 p-5 sm:p-6">
+            <div className="border-b border-white/10 pb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Editor</p>
+              <h2 className="mt-1 text-xl font-semibold text-white">{form.id ? "Edit sermon" : "New sermon"}</h2>
+              <p className="mt-1 text-sm text-slate-400">Keep titles and taxonomy consistent for easier browsing.</p>
+            </div>
             <div>
               <label className="block text-sm font-semibold text-slate-200" htmlFor="title">
                 Title
@@ -368,7 +397,6 @@ export default function Page() {
               </button>
             </div>
 
-            {status && <p className="mt-3 text-sm text-slate-300">{status}</p>}
           </form>
         </div>
       </div>

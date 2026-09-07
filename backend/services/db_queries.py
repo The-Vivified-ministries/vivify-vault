@@ -3,6 +3,7 @@ import re
 from sqlmodel import Session, select
 import logging
 from sqlalchemy import func, or_, text, case
+from sqlalchemy.orm import load_only
 from db import engine
 from models import Sermon
 from services import embeddings
@@ -68,12 +69,6 @@ def search_sermons(query: str, top_k: int = 3) -> list[Sermon]:
         return sermons
 
 
-def get_all_sermons(limit: int = 200) -> list[Sermon]:
-    with Session(engine) as session:
-        stmt = select(Sermon).order_by(Sermon.title).limit(limit)
-        return session.exec(stmt).all()
-
-
 def save_sermon(sermon_data: dict) -> Sermon:
     sermon_data = dict(sermon_data)
     if "categories" in sermon_data:
@@ -126,6 +121,18 @@ def search_sermons_titles(query: str, top_k: int = 50) -> list[Sermon]:
         stmt = (
             select(Sermon)
             .where(Sermon.title.ilike(f"%{query_text}%"))
+            .options(
+                load_only(
+                    Sermon.id,
+                    Sermon.title,
+                    Sermon.year,
+                    Sermon.categories,
+                    Sermon.subcategories,
+                    Sermon.description,
+                    Sermon.spotify_link,
+                    Sermon.apple_music_link,
+                )
+            )
             .order_by(Sermon.title)
             .limit(top_k)
         )

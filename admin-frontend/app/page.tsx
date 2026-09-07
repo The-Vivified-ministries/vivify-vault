@@ -27,8 +27,8 @@ export default function Page() {
   const [adminKey, setAdminKey] = useState("");
   const [showAdminKey, setShowAdminKey] = useState(false);
   const [userName, setUserName] = useState("");
+  const [searchTitle, setSearchTitle] = useState("");
   const [sermons, setSermons] = useState<AdminSermon[]>([]);
-  const [sermonPage, setSermonPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [bulkCsv, setBulkCsv] = useState(csvTemplate);
   const [form, setForm] = useState<AdminSermonPayload>(emptySermon);
@@ -40,10 +40,6 @@ export default function Page() {
     () => sermons.find((item) => item.id === selectedId) ?? null,
     [sermons, selectedId]
   );
-  const pageSize = 25;
-  const totalPages = Math.max(1, Math.ceil(sermons.length / pageSize));
-  const visibleSermons = sermons.slice((sermonPage - 1) * pageSize, sermonPage * pageSize);
-
   useEffect(() => {
     if (selectedSermon) {
       setForm({
@@ -61,17 +57,20 @@ export default function Page() {
     }
   }, [selectedSermon]);
 
-  async function loadSermons() {
-    if (!adminKey) {
-      setStatus("Enter your admin key first.");
+  async function loadSermons(title = searchTitle) {
+    const trimmedTitle = title.trim();
+    if (!adminKey || !trimmedTitle) {
+      setSermons([]);
+      setSelectedId(null);
+      setStatus(!adminKey ? "Enter your admin key first." : "Enter a sermon title to search.");
       return;
     }
+    setSearchTitle(trimmedTitle);
     setLoading(true);
     setStatus(null);
     try {
-      const data = await getAdminSermons(adminKey);
+      const data = await getAdminSermons(adminKey, trimmedTitle);
       setSermons(data);
-      setSermonPage(1);
     } catch (error) {
       setStatus("Unable to load sermons. Check your admin key and backend.");
     } finally {
@@ -89,7 +88,7 @@ export default function Page() {
     setStatus(null);
     try {
       const result = await saveAdminSermon(adminKey, userName, form);
-      await loadSermons();
+      await loadSermons(form.title);
       setSelectedId(result.id);
       setStatus(`Sermon ${form.id ? "updated" : "created"} successfully.`);
     } catch (error) {
@@ -126,7 +125,11 @@ export default function Page() {
     setStatus(null);
     try {
       const added = await bulkAddAdminSermons(adminKey, userName, bulkCsv);
-      await loadSermons();
+      if (searchTitle.trim()) {
+        await loadSermons(searchTitle);
+      } else {
+        setSermons([]);
+      }
       setStatus(`${added.length} sermons added successfully.`);
       setBulkCsv(csvTemplate);
     } catch (error) {
@@ -217,11 +220,11 @@ export default function Page() {
 
             <button
               type="button"
-              onClick={loadSermons}
+              onClick={() => loadSermons()}
               disabled={loading || syncing}
               className="w-full rounded-2xl bg-violet-500 px-4 py-3 text-base font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Loading…" : "Load sermons"}
+              {loading ? "Searching…" : "Search sermons"}
             </button>
             <button
               type="button"
@@ -233,6 +236,16 @@ export default function Page() {
             </button>
 
             <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+              <label className="block text-sm font-semibold text-slate-200" htmlFor="searchTitle">
+                Search by title
+              </label>
+              <input
+                id="searchTitle"
+                value={searchTitle}
+                onChange={(e) => setSearchTitle(e.target.value)}
+                placeholder="Enter part of a title"
+                className="mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-violet-500"
+              />
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Library</p>
@@ -242,9 +255,9 @@ export default function Page() {
               </div>
               <div className="mt-3 max-h-[420px] space-y-2 overflow-auto">
                 {sermons.length === 0 ? (
-                  <p className="text-slate-500">No sermons loaded yet.</p>
+                  <p className="text-slate-500">Search for a sermon title to see results.</p>
                 ) : (
-                    visibleSermons.map((item) => (
+                    sermons.map((item) => (
                     <button key={item.id} type="button" onClick={() => setSelectedId(item.id)} className="block w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-left text-sm text-slate-200 hover:border-slate-600">
                         <div className="font-semibold">{item.title}</div>
                         <div className="mt-1 text-xs text-slate-500">{item.categories.join(" • ")} {item.year ? `· ${item.year}` : ""}</div>
@@ -252,18 +265,6 @@ export default function Page() {
                   ))
                 )}
               </div>
-              {sermons.length > pageSize && (
-                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
-                  <span>
-                    Showing {(sermonPage - 1) * pageSize + 1}-{Math.min(sermonPage * pageSize, sermons.length)} of {sermons.length}
-                  </span>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setSermonPage((page) => Math.max(1, page - 1))} disabled={sermonPage === 1} className="rounded-lg border border-slate-700 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40">Previous</button>
-                    <span className="px-1 py-1.5">{sermonPage} / {totalPages}</span>
-                    <button type="button" onClick={() => setSermonPage((page) => Math.min(totalPages, page + 1))} disabled={sermonPage === totalPages} className="rounded-lg border border-slate-700 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
-                  </div>
-                </div>
-              )}
               <form onSubmit={handleBulkAdd} className="mt-5 space-y-3 border-t border-slate-800 pt-5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-slate-200">Add many sermons</p>

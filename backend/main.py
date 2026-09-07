@@ -1,7 +1,7 @@
 import csv
 import io
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
@@ -118,9 +118,12 @@ def admin_sync(x_admin_key: str | None = Header(default=None)):
 
 
 @app.get("/admin/sermons", response_model=list[SermonOut])
-def admin_get_sermons(x_admin_key: str | None = Header(default=None)):
+def admin_get_sermons(
+    title: str = Query(..., min_length=1, max_length=200),
+    x_admin_key: str | None = Header(default=None),
+):
     _check_admin(x_admin_key)
-    sermons = db_queries.get_all_sermons(limit=500)
+    sermons = db_queries.search_sermons_titles(title, top_k=50)
     return [SermonOut(**s.dict()) for s in sermons]
 
 

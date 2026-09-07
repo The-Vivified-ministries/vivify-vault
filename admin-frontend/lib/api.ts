@@ -22,8 +22,9 @@ export type AdminSermonPayload = {
   apple_music_link: string | null;
 };
 
-export async function getAdminSermons(adminKey: string): Promise<AdminSermon[]> {
-  const res = await fetch(`${API_URL}/admin/sermons`, {
+export async function getAdminSermons(adminKey: string, title: string): Promise<AdminSermon[]> {
+  const params = new URLSearchParams({ title });
+  const res = await fetch(`${API_URL}/admin/sermons?${params.toString()}`, {
     headers: { "X-Admin-Key": adminKey },
     cache: "no-store",
   });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   askChat,
+  rateChat,
   searchSermons,
   ChatResponse,
   Sermon,
@@ -17,10 +18,8 @@ export default function ChatSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchResults, response]);
+  const [chatRating, setChatRating] = useState<number | null>(null);
+  const [ratingError, setRatingError] = useState(false);
 
   const pageSize = 10;
   const totalItems = searchResults ? searchResults.length : response ? response.results.length : 0;
@@ -33,6 +32,9 @@ export default function ChatSection() {
     setError(null);
     setResponse(null);
     setSearchResults(null);
+    setPage(1);
+    setChatRating(null);
+    setRatingError(false);
 
     try {
       if (mode === "search") {
@@ -49,9 +51,21 @@ export default function ChatSection() {
     }
   }
 
+  async function handleChatRating(rating: number) {
+    if (!response) return;
+    setChatRating(rating);
+    setRatingError(false);
+    try {
+      await rateChat(response.query_id, rating);
+    } catch {
+      setRatingError(true);
+    }
+  }
+
   function handleClearResults() {
     setSearchResults(null);
     setError(null);
+    setPage(1);
   }
 
   return (
@@ -67,34 +81,39 @@ export default function ChatSection() {
           Not sure which sermon you need?
         </h2>
         <p className="mt-2 text-vault-stone text-lg">
-          Tell us what you're going through or what you're curious about —
+          Tell us what you&apos;re going through or what you&apos;re curious about —
           the Vault will surface the sermon that fits.
         </p>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMode("chat")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                mode === "chat"
-                  ? "bg-vault-magenta text-white"
-                  : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("search")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                mode === "search"
-                  ? "bg-vault-magenta text-white"
-                  : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
-              }`}
-            >
-              Search
-            </button>
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-xs text-gray-400">
+              We anonymously record your entries to help us improve.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("chat")}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  mode === "chat"
+                    ? "bg-vault-magenta text-white"
+                    : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("search")}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  mode === "search"
+                    ? "bg-vault-magenta text-white"
+                    : "bg-vault-stone text-vault-charcoal hover:bg-vault-lavender"
+                }`}
+              >
+                Search
+              </button>
+            </div>
           </div>
           <p
             className="text-xs text-gray-400"
@@ -198,6 +217,31 @@ export default function ChatSection() {
                 Showing direct matches (smart answers are temporarily paused).
               </p>
             )}
+
+            <div className="mt-3 flex items-center gap-1">
+              <span className="mr-1 text-xs text-gray-500">Rate this response</span>
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <button
+                  key={rating}
+                  type="button"
+                  aria-label={`Rate this response ${rating} out of 5 stars`}
+                  aria-pressed={chatRating === rating}
+                  onClick={() => void handleChatRating(rating)}
+                  className={`grid size-8 place-items-center rounded text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-vault-magenta ${
+                    chatRating !== null && rating <= chatRating
+                      ? "text-vault-gold"
+                      : "text-gray-400 hover:text-vault-gold"
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+              {ratingError && (
+                <span role="status" className="ml-2 text-xs text-gray-500">
+                  Rating could not be saved.
+                </span>
+              )}
+            </div>
 
             <div className="mt-6">
               <p className="text-sm text-gray-600">

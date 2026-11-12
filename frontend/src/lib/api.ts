@@ -18,6 +18,7 @@ export type SearchResult = {
 };
 
 export type ChatResponse = {
+  query_id: number;
   answer: string;
   llm_used: boolean;
   results: SearchResult[];
@@ -33,6 +34,15 @@ export async function searchSermons(
   );
   if (!res.ok) throw new Error("Search request failed");
   return res.json();
+}
+
+export async function rateChat(queryId: number, rating: number): Promise<void> {
+  const res = await fetch(`${API_URL}/chat/${queryId}/rating`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rating }),
+  });
+  if (!res.ok) throw new Error("Rating submission failed");
 }
 
 // Server-side cached — used for the top-level category list on first

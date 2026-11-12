@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from models import (
     ChatRequest,
+    ChatRatingRequest,
     ChatResponse,
     SearchResult,
     SermonAdminRequest,
@@ -71,6 +72,7 @@ def sermons(
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
+    query_id = db_queries.record_query(req.query, "chat")
     sermons = db_queries.search_sermons(req.query, top_k=req.top_k)
 
     sermons_for_llm = [
@@ -101,13 +103,26 @@ def chat(req: ChatRequest):
         )
         for s in sermons
     ]
-    return ChatResponse(answer=answer, llm_used=groq_service.is_enabled(), results=results)
+    return ChatResponse(
+        query_id=query_id,
+        answer=answer,
+        llm_used=groq_service.is_enabled(),
+        results=results,
+    )
+
+
+@app.post("/chat/{query_id}/rating")
+def chat_rating(query_id: int, req: ChatRatingRequest):
+    if not db_queries.save_chat_rating(query_id, req.rating):
+        raise HTTPException(status_code=404, detail="Chat query not found")
+    return {"query_id": query_id, "rating": req.rating}
 
 
 @app.get("/search", response_model=list[SermonOut])
 def search(q: str, top_k: int = 3):
+    db_queries.record_query(q, "search")
     sermons = db_queries.search_sermons_titles(q, top_k=top_k)
-    return [SermonOut(**s.dict()) for s in sermons]
+    return [SermonOut(**sermon.dict()) for sermon in sermons]
 
 
 @app.post("/admin/sync", response_model=SyncResult)

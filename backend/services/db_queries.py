@@ -5,10 +5,38 @@ import logging
 from sqlalchemy import func, or_, text, case
 from sqlalchemy.orm import load_only
 from db import engine
-from models import Sermon
+from models import ChatRating, QueryLog, Sermon
 from services import embeddings
 from pgvector.sqlalchemy import Vector
 from taxonomy import get_categories, get_subcategories as get_fixed_subcategories, is_valid_pair
+
+
+def record_query(query: str, function: str) -> int:
+    with Session(engine) as session:
+        query_log = QueryLog(query=query, function=function)
+        session.add(query_log)
+        session.commit()
+        session.refresh(query_log)
+        return query_log.id
+
+
+def save_chat_rating(query_id: int, rating: int) -> bool:
+    with Session(engine) as session:
+        query_log = session.get(QueryLog, query_id)
+        if query_log is None or query_log.function != "chat":
+            return False
+
+        saved_rating = session.exec(
+            select(ChatRating).where(ChatRating.query_id == query_id)
+        ).first()
+        if saved_rating is None:
+            saved_rating = ChatRating(query_id=query_id, rating=rating)
+        else:
+            saved_rating.rating = rating
+
+        session.add(saved_rating)
+        session.commit()
+        return True
 
 
 def _normalize_taxonomy_values(values: list[str] | None) -> list[str]:

@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import ARRAY, String
+from sqlalchemy import ARRAY, CheckConstraint, DateTime, String, func
 from pgvector.sqlalchemy import Vector
 from pydantic import BaseModel
 
@@ -19,6 +21,36 @@ class Sermon(SQLModel, table=True):
     last_synced_hash: str | None = None
 
 
+class QueryLog(SQLModel, table=True):
+    __tablename__ = "query_logs"
+    __table_args__ = (
+        CheckConstraint('"function" IN (\'search\', \'chat\')', name="query_logs_function_check"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    query: str
+    function: str = Field(sa_column=Column(String, nullable=False))
+    date: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
+    )
+
+
+class ChatRating(SQLModel, table=True):
+    __tablename__ = "chat_ratings"
+    __table_args__ = (
+        CheckConstraint("rating BETWEEN 1 AND 5", name="chat_ratings_rating_check"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    query_id: int = Field(foreign_key="query_logs.id", unique=True)
+    rating: int
+    date: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=False, server_default=func.now()),
+    )
+
+
 # --- API schemas ---
 
 class SermonOut(BaseModel):
@@ -35,6 +67,10 @@ class SermonOut(BaseModel):
 class ChatRequest(BaseModel):
     query: str
     top_k: int = 3
+
+
+class ChatRatingRequest(BaseModel):
+    rating: int = Field(ge=1, le=5)
 
 
 class SearchResult(BaseModel):
@@ -65,6 +101,7 @@ class BulkSermonCreateRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    query_id: int
     answer: str
     llm_used: bool
     results: list[SearchResult]

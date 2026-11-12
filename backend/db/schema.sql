@@ -27,6 +27,22 @@ CREATE INDEX IF NOT EXISTS idx_sermons_subcategories ON sermons USING GIN (subca
 CREATE INDEX IF NOT EXISTS idx_sermons_year ON sermons (year);
 CREATE INDEX IF NOT EXISTS idx_sermons_embedding ON sermons USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
+CREATE TABLE IF NOT EXISTS query_logs (
+    id SERIAL PRIMARY KEY,
+    query TEXT NOT NULL,
+    date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "function" TEXT NOT NULL CHECK ("function" IN ('search', 'chat'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_query_logs_date ON query_logs (date);
+
+CREATE TABLE IF NOT EXISTS chat_ratings (
+    id SERIAL PRIMARY KEY,
+    query_id INTEGER NOT NULL UNIQUE REFERENCES query_logs(id) ON DELETE CASCADE,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Optional: a couple of test rows to confirm everything's wired up
 -- before your PM starts entering real data. Safe to delete after testing.
 INSERT INTO sermons (title, year, categories, subcategories, description, spotify_link, apple_music_link)

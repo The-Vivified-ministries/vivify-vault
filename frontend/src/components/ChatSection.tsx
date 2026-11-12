@@ -135,47 +135,55 @@ export default function ChatSection() {
 
         {mode === "search" && searchResults && (
           <>
-            <div className="mt-6 flex items-center justify-between gap-4">
-              <p className="text-sm text-gray-300">
-                Showing {Math.min((page - 1) * pageSize + 1, searchResults.length)}-
-                {Math.min(page * pageSize, searchResults.length)} of {searchResults.length} sermons.
+            {searchResults.length === 0 ? (
+              <p className="mt-6 text-gray-300">
+                No sermons available for this, but we have noted your search and will consider it.
               </p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleClearResults}
-                  className="rounded-full bg-vault-stone px-4 py-2 text-sm font-semibold text-vault-charcoal hover:bg-vault-lavender"
-                >
-                  Clear results
-                </button>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-                  <span className="text-sm text-gray-300">
-                    Page {page} / {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
-                  >
-                    Next
-                  </button>
+            ) : (
+              <>
+                <div className="mt-6 flex items-center justify-between gap-4">
+                  <p className="text-sm text-gray-300">
+                    Showing {Math.min((page - 1) * pageSize + 1, searchResults.length)}-
+                    {Math.min(page * pageSize, searchResults.length)} of {searchResults.length} sermons.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleClearResults}
+                      className="rounded-full bg-vault-stone px-4 py-2 text-sm font-semibold text-vault-charcoal hover:bg-vault-lavender"
+                    >
+                      Clear results
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-sm text-gray-300">
+                        Page {page} / {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="rounded-full bg-vault-stone px-3 py-2 text-sm font-semibold text-vault-charcoal disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="mt-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {searchResults.slice((page - 1) * pageSize, page * pageSize).map((sermon) => (
-                <SermonCard key={sermon.id} sermon={sermon} />
-              ))}
-            </div>
+                <div className="mt-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {searchResults.slice((page - 1) * pageSize, page * pageSize).map((sermon) => (
+                    <SermonCard key={sermon.id} sermon={sermon} />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
 

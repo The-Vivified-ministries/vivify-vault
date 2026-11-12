@@ -1,9 +1,13 @@
 import hashlib
 import re
 from sqlmodel import Session, select
+from sqlalchemy import func
+from sqlalchemy.orm import load_only
 from db import engine
 from models import Sermon
 from services import embeddings
+
+_EMBED_BATCH_SIZE = 32
 
 
 def _content_hash(s: Sermon) -> str:
@@ -27,32 +31,54 @@ def run_sync() -> dict:
     unchanged = 0
 
     with Session(engine) as session:
-        sermons = session.exec(select(Sermon)).all()
-        total = len(sermons)
+        total = session.exec(select(func.count()).select_from(Sermon)).one()
+        missing_embeddings = session.exec(
+            select(func.count()).select_from(Sermon).where(Sermon.embedding.is_(None))
+        ).one()
+        unchanged = total - missing_embeddings
 
-        to_embed: list[tuple[Sermon, str]] = []
-        for s in sermons:
-            h = _content_hash(s)
-            if s.last_synced_hash != h:
-                to_embed.append((s, h))
-            else:
-                unchanged += 1
+        while True:
+            to_embed = session.exec(
+                select(Sermon)
+                .where(Sermon.embedding.is_(None))
+                .options(
+                    load_only(
+                        Sermon.id,
+                        Sermon.title,
+                        Sermon.year,
+                        Sermon.categories,
+                        Sermon.subcategories,
+                        Sermon.description,
+                        Sermon.spotify_link,
+                        Sermon.apple_music_link,
+                        Sermon.last_synced_hash,
+                    )
+                )
+                .order_by(Sermon.id)
+                .limit(_EMBED_BATCH_SIZE)
+            ).all()
+            if not to_embed:
+                break
 
-        if to_embed:
             try:
                 texts = [
                     f"{s.title}. {_strip_html(s.description)}"
-                    for s, _ in to_embed
+                    for s in to_embed
                 ]
                 vectors = embeddings.embed_texts(texts)
-                for (s, h), vec in zip(to_embed, vectors):
+                if len(vectors) != len(to_embed):
+                    raise ValueError("Embedding count does not match sermon count")
+
+                for s, vec in zip(to_embed, vectors):
                     s.embedding = vec
-                    s.last_synced_hash = h
+                    s.last_synced_hash = _content_hash(s)
                     session.add(s)
                 session.commit()
-                new_or_updated = len(to_embed)
+                new_or_updated += len(to_embed)
             except Exception as e:
+                session.rollback()
                 errors.append(str(e))
+                break
 
     return {
         "total_rows": total,
